@@ -1,0 +1,29 @@
+# Distribution Operations AI RCA Platform - Python Dependencies
+fastapi>=0.111.0,<1.0.0
+uvicorn[standard]>=0.30.0
+pydantic>=2.7.0
+pydantic-settings>=2.2.0
+
+# LangChain & LangGraph Multi-Agent Stack
+langchain>=0.2.0
+langchain-core>=0.2.0
+langchain-community>=0.2.0
+langgraph>=0.1.0
+langchain-openai>=0.1.7
+
+# Vector Database & Retrieval
+chromadb>=0.5.0
+scikit-learn>=1.4.0
+numpy>=1.26.0
+
+# LLM Providers (Multi-Provider Fallback: Groq, Anthropic, OpenAI, Ollama)
+openai>=1.30.0
+anthropic>=0.26.0
+langchain-groq>=0.2.0
+langchain-anthropic>=0.3.0
+langchain-ollama>=0.2.0
+
+# Utilities
+python-multipart>=0.0.9
+requests>=2.31.0
+python-dotenv>=1.0.1

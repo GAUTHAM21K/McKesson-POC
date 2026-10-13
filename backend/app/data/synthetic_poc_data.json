@@ -1,0 +1,227 @@
+{
+  "incidents": [
+    {
+      "incident_id": "INC0892110",
+      "number": "INC0892110",
+      "priority": "P1 - Critical",
+      "severity": "1 - Critical",
+      "state": "In Progress",
+      "short_description": "Acumax WMS Wave Release Deadlock halting Order Fulfillment across Zones A-D",
+      "description": "DC-04 Memphis reports that morning wave allocation (Wave #88201) locked up at 06:15 EST. Over 24,500 retail pharmacy customer orders are stalled. RF picking terminals in Zones A, B, C, and D are throwing 'WAVE_NOT_ACTIVE' and 'LOCK_WAIT_TIMEOUT'. 14 outbound line-haul trailers are currently held at dock doors pending picking and truck close.",
+      "distribution_center": "DC-04 Memphis Regional DC",
+      "dc_code": "DC-04",
+      "process_stage": "Acumax",
+      "pipeline_sequence": ["SAP", "EAI", "Acumax", "Pick", "Pack", "Ship", "Truck Close"],
+      "configuration_item": "ACUMAX-WMS-PROD-CLUSTER-04",
+      "assignment_group": "Distribution Ops Incident Management",
+      "caller": "Marcus Vance (Ops Director - DC-04)",
+      "sys_created_on": "2026-10-10 06:22:14",
+      "business_impact": "High. Halts order processing for 340 hospital pharmacies; estimated SLA breach within 45 minutes. Carrier detention charges imminent.",
+      "ticket_notes": [
+        "06:22 Marcus Vance: Opened ticket. Entire morning wave 88201 is stuck in 'ALLOCATING' state. Pickers standing idle at Zone A pick faces.",
+        "06:31 Support L1: Attempted manual wave cancellation from Acumax GUI. Received error: 'ORA-00054: resource busy and acquire with NOWAIT specified'.",
+        "06:45 DB Admin: Detected blocking session 1422 holding exclusive row locks on table WAVE_HDR_DTL during concurrent replenishment trigger.",
+        "07:05 On-Call Ops: Need immediate RCA and remediation plan. Waves cannot be released until lock is released safely without corrupting carton allocations."
+      ],
+      "synthetic_logs": [
+        "2026-10-10 06:14:58.201 [Acumax-Worker-12] INFO  com.acumax.wave.WaveService - Initiating Wave 88201 allocation for 24,582 order lines.",
+        "2026-10-10 06:15:02.884 [Acumax-DB-Pool] WARN  com.acumax.db.ConnectionPool - Active connections 98/100. High contention on WAVE_HDR_DTL.",
+        "2026-10-10 06:15:04.112 [Acumax-Worker-12] ERROR com.acumax.wave.AllocationTask - ORA-00060: Deadlock detected while waiting for resource on index PK_WAVE_ALLOC.",
+        "2026-10-10 06:15:05.419 [EAI-Gateway] ERROR com.eai.bridge.BridgeReceiver - EAI_ERR_504_GW_DEADLOCK: Acumax wave endpoint did not acknowledge within 30000ms.",
+        "2026-10-10 06:16:10.005 [Acumax-RF-GW] WARN  com.acumax.rf.TerminalHandler - Device RF-402 (Zone A) received ERR_CODE: WAVE_NOT_ACTIVE.",
+        "2026-10-10 06:20:00.104 [Acumax-Watchdog] CRIT  com.acumax.monitor.HealthCheck - Wave allocation daemon thread STUCK for 301 seconds. Status: BLOCKED."
+      ]
+    },
+    {
+      "incident_id": "INC0892445",
+      "number": "INC0892445",
+      "priority": "P1 - Critical",
+      "severity": "1 - Critical",
+      "state": "New",
+      "short_description": "SAP to Acumax EAI Middleware IDoc DELVRY03 Serialization Failure",
+      "description": "DC-12 Dallas Fort Worth Hub: Outbound delivery IDocs from SAP ECC (message type DESADV / DELVRY03) are backing up in the EAI middleware message broker. Over 18,200 urgent hospital replenishment orders are stuck in status 'EAI_IN_TRANSIT'. Acumax WMS inbound queue is starved of new pick release orders. SAP shows green dispatch, but EAI broker reports duplicate sequence conflict.",
+      "distribution_center": "DC-12 Dallas Fort Worth Hub",
+      "dc_code": "DC-12",
+      "process_stage": "EAI",
+      "pipeline_sequence": ["SAP", "EAI", "Acumax", "Pick", "Pack", "Ship", "Truck Close"],
+      "configuration_item": "EAI-BROKER-PROD-M12",
+      "assignment_group": "Distribution Ops Incident Management",
+      "caller": "Sarah Jenkins (DC Systems Lead - DC-12)",
+      "sys_created_on": "2026-10-10 07:14:02",
+      "business_impact": "Severe. Inbound pick orders stalled for North Texas hospital distribution. Potential cutoff miss for 11:00 AM delivery dispatch.",
+      "ticket_notes": [
+        "07:14 Sarah Jenkins: Over 18k delivery orders sent from SAP ECC are not arriving in Acumax. Floor supervisors reporting picking queues empty.",
+        "07:22 Middleware Team: EAI queue 'Q_SAP_TO_ACUMAX_DELVRY' depth is growing rapidly (currently 18,240 messages). Processing rate is 0 msgs/sec.",
+        "07:30 L2 Support: Found head-of-line blocking on IDoc 99281003 due to sequence mismatch header error."
+      ],
+      "synthetic_logs": [
+        "2026-10-10 07:08:12.110 [SAP-ECC-RFC] INFO  com.sap.idoc.OutboundDispatcher - Dispatched DELVRY03 IDoc 99281003 for DC-12.",
+        "2026-10-10 07:08:13.450 [EAI-Inbound-Adapter] INFO  com.eai.sap.Adapter - Received IDoc 99281003, payload size: 42KB.",
+        "2026-10-10 07:08:14.002 [EAI-Transformer] ERROR com.eai.transform.DelvryTransformer - IDOC_SEQ_MISMATCH_RECORD_REJECTED: Received sequence ID 44012 expected 44011.",
+        "2026-10-10 07:08:14.005 [EAI-Broker] FATAL com.eai.queue.StrictFifoManager - Queue 'Q_SAP_TO_ACUMAX_DELVRY' locked. Head of line packet halted processing.",
+        "2026-10-10 07:12:00.000 [EAI-Monitor] ALERT com.eai.alert.QueueThresholdAlert - Queue depth exceeded 15,000 threshold (current: 18,240)."
+      ]
+    },
+    {
+      "incident_id": "INC0892780",
+      "number": "INC0892780",
+      "priority": "P2 - Major",
+      "severity": "2 - Major",
+      "state": "In Progress",
+      "short_description": "Conveyor Sortation Scanner Mismatch at Pack-to-Ship Lane 7 causing Recirculation",
+      "description": "DC-08 Atlanta Metro DC: Automated Sortation conveyor system Lane 7 is recirculating packages back to the jackpot spur instead of diverting to outbound shipping doors 21-26. 4,100 parcels containing temperature-sensitive medications are stuck in conveyor recirculation loops. Optical scan heads reporting 64.2% no-read rate.",
+      "distribution_center": "DC-08 Atlanta Metro DC",
+      "dc_code": "DC-08",
+      "process_stage": "Ship",
+      "pipeline_sequence": ["SAP", "EAI", "Acumax", "Pick", "Pack", "Ship", "Truck Close"],
+      "configuration_item": "CONVEYOR-PLC-SORTER-L7",
+      "assignment_group": "Distribution Ops Incident Management",
+      "caller": "Derrick Lowe (Operations Shift Manager - DC-08)",
+      "sys_created_on": "2026-10-10 07:45:50",
+      "business_impact": "Moderate to High. Package accumulation on jackpot line threatens physical conveyor gridlock; cold chain dwell times nearing limit.",
+      "ticket_notes": [
+        "07:45 Derrick Lowe: Packages reaching Lane 7 sorter are not diverting. 6 out of 10 boxes being routed to the jackpot return conveyor.",
+        "07:58 Maintenance Ops: Checked conveyor belts physically; mechanical divert arms are operational when tested manually.",
+        "08:10 WCS Engineering: Suspicion that Warehouse Control System (WCS) barcode validation timing window desynchronized from high-speed photo eye."
+      ],
+      "synthetic_logs": [
+        "2026-10-10 07:41:10.220 [WCS-PLC-Driver] INFO  com.wcs.plc.SorterController - Carton ID 7002910 passed trigger photo-eye PE-701.",
+        "2026-10-10 07:41:10.510 [Cognex-Scanner] WARN  com.scanner.vision.BarCodeReader - SCAN_ERR_TIMEOUT_NO_READ: Read window 250ms expired without valid decode.",
+        "2026-10-10 07:41:10.512 [WCS-Divert-Engine] WARN  com.wcs.divert.LaneSelector - Destination unknown for Carton 7002910. Divert action: DEFAULT_JACKPOT.",
+        "2026-10-10 07:42:01.300 [WCS-Stats] ERROR com.wcs.stats.DivertMetrics - Sorter Lane 7 Divert Error Rate: 64.2% (Threshold: 5.0%).",
+        "2026-10-10 07:44:19.410 [Acumax-Ship-Feed] INFO  com.acumax.ship.LaneTracker - Jackpot accumulation sensor JACKPOT_HIGH_WATER activated."
+      ]
+    },
+    {
+      "incident_id": "INC0893012",
+      "number": "INC0893012",
+      "priority": "P2 - Major",
+      "severity": "2 - Major",
+      "state": "Open",
+      "short_description": "Truck Close EDI 856 ASN Generation Failure due to Ghost Split Line in Acumax",
+      "description": "DC-19 Columbus Regional DC: Outbound trailer close on dock door 14 (Trailer ID TRK-8821, Carrier Old Dominion) is failing. Acumax manifests 1,420 cartons as loaded, but EDI 856 Advanced Shipping Notice (ASN) generation halts with code ERR_ASN_856_LINE_UNMATCHED. Line item 40 on order #771920 was split during pick pack but remains unconfirmed in Acumax staging tables, preventing Bill of Lading (BOL) print.",
+      "distribution_center": "DC-19 Columbus Regional DC",
+      "dc_code": "DC-19",
+      "process_stage": "Truck Close",
+      "pipeline_sequence": ["SAP", "EAI", "Acumax", "Pick", "Pack", "Ship", "Truck Close"],
+      "configuration_item": "ACUMAX-EDI-OUTBOUND-GATEWAY",
+      "assignment_group": "Distribution Ops Incident Management",
+      "caller": "Elena Rostova (Shipping Dock Supervisor - DC-19)",
+      "sys_created_on": "2026-10-10 08:02:11",
+      "business_impact": "Moderate. Outbound carrier truck held at bay; late departure penalty $350/hr after 09:00 EST. 3 additional trailers queuing behind bay 14.",
+      "ticket_notes": [
+        "08:02 Elena Rostova: Carrier is loaded and doors locked, but dispatch office cannot close trailer in Acumax to print BOL.",
+        "08:15 EDI Operations: System generated error: 'ASN line item count (1419) does not match manifest count (1420)'. Order 771920 line 40 has orphan record.",
+        "08:24 Dock Clerk: Need instructions on how to reconcile ghost split line without unloading the trailer."
+      ],
+      "synthetic_logs": [
+        "2026-10-10 08:00:22.115 [Acumax-TruckClose] INFO  com.acumax.dock.TrailerCloseService - Commencing truck close for Trailer TRK-8821 (Door 14).",
+        "2026-10-10 08:00:24.402 [Acumax-EDI-Gen] INFO  com.acumax.edi.Asn856Builder - Building EDI 856 payload for 1420 carton serials.",
+        "2026-10-10 08:00:25.109 [Acumax-EDI-Gen] ERROR com.acumax.edi.Asn856Builder - ERR_ASN_856_LINE_UNMATCHED: Order 771920 Line 40 status 'SPLIT_PENDING' has no pack carton reference.",
+        "2026-10-10 08:00:25.112 [Acumax-TruckClose] ERROR com.acumax.dock.TrailerCloseService - Trailer close aborted: BOL generation blocked by incomplete EDI transmission.",
+        "2026-10-10 08:01:00.002 [EDI-Outbound-Queue] WARN  com.edi.broker.OutboundBridge - Document 856-TRK-8821 placed in HOLD_RETRY queue."
+      ]
+    },
+    {
+      "incident_id": "INC0893299",
+      "number": "INC0893299",
+      "priority": "P1 - Critical",
+      "severity": "1 - Critical",
+      "state": "Open",
+      "short_description": "SAP ECC Material Master Expiration Flag Inconsistency blocking Cold Chain Picking",
+      "description": "DC-02 Sacramento DC: Automated carousel picking in Cold Chain Zone CC-1 (refrigerated 2-8°C biologics and insulin) is throwing hard stop validation errors. Pickers cannot complete batches because SAP material master sync overnight flagged 84 critical vaccine SKUs with conflicting temperature storage profiles. Acumax WMS safety interlock is preventing pick confirmation.",
+      "distribution_center": "DC-02 Sacramento Regional DC",
+      "dc_code": "DC-02",
+      "process_stage": "Pick",
+      "pipeline_sequence": ["SAP", "EAI", "Acumax", "Pick", "Pack", "Ship", "Truck Close"],
+      "configuration_item": "ACUMAX-PICK-COLDCHAIN-CC1",
+      "assignment_group": "Distribution Ops Incident Management",
+      "caller": "Kenji Sato (Cold Chain Quality Lead - DC-02)",
+      "sys_created_on": "2026-10-10 08:20:45",
+      "business_impact": "Critical. Cold chain biologics value $1.8M. Time out of refrigeration (TOR) counter running for totes staged on packing spur.",
+      "ticket_notes": [
+        "08:20 Kenji Sato: Cold chain pickers in Zone CC-1 cannot confirm picks on RF guns. Error displays: 'BATCH_TEMP_RANGE_INVALID_BLOCK'.",
+        "08:35 Master Data Team: Overnight SAP sync push updated MARA-TEMPB field incorrectly for plant 0200.",
+        "08:44 Quality Assurance: Emergency hold placed on zone CC-1 until master data temperature profile is restored."
+      ],
+      "synthetic_logs": [
+        "2026-10-10 08:18:02.100 [Acumax-Pick-Engine] INFO  com.acumax.pick.BatchDispatcher - Dispatching pick tasks for Cold Chain Batch CC-9902.",
+        "2026-10-10 08:18:04.220 [Acumax-QA-Check] ERROR com.acumax.qa.TempValidator - BATCH_TEMP_RANGE_INVALID_BLOCK: SKU VAX-9022 requires 2-8C, SAP MARA profile specifies AMBIENT_15_25.",
+        "2026-10-10 08:18:04.225 [Acumax-RF-Service] WARN  com.acumax.rf.ColdChainTerminal - User ID PK-441 prevented from confirming tote barcode TOTE-00921.",
+        "2026-10-10 08:19:10.550 [ColdChain-Monitor] CRIT  com.acumax.iot.TempSensor - TOR timer initialized for staged tote TOTE-00921 (Limit: 45 min)."
+      ]
+    }
+  ],
+  "knowledge_base": [
+    {
+      "kb_id": "KB0041829",
+      "title": "Acumax Wave Allocation Deadlocks & Database Sequence Locking Resolution SOP",
+      "category": "Acumax WMS",
+      "tags": ["Acumax", "Wave Release", "Deadlock", "ORA-00054", "WAVE_HDR_DTL", "Database Locks"],
+      "applicable_stages": ["Acumax"],
+      "content": "OVERVIEW: During peak morning order volume, concurrent execution of bulk wave allocation and automated replenishment tasks can result in mutual resource deadlocks on table WAVE_HDR_DTL and index PK_WAVE_ALLOC. Symptoms include Wave status hanging in 'ALLOCATING', RF guns displaying 'WAVE_NOT_ACTIVE', and Oracle error ORA-00054 / ORA-00060.\n\nDIAGNOSTIC CRITERIA:\n1. Check active database locks using query: SELECT session_id, lock_type, mode_held FROM v$locked_object WHERE object_name = 'WAVE_HDR_DTL'.\n2. Verify EAI gateway logs for timeout code EAI_ERR_504_GW_DEADLOCK.\n3. Verify wave allocation worker thread state in Acumax WMS console.\n\nREMEDIATION PROCEDURE (SOP-WMS-418):\nStep 1: Identify and terminate the blocking background replenishment job session in Oracle DB.\nStep 2: Reset the hung wave record status from 'ALLOCATING' to 'PENDING_RELEASE' using the approved DBA stored procedure: EXEC sp_acumax_wave_reset(wave_id => :WAVE_ID).\nStep 3: Stagger allocation releases into sub-batches (maximum 5,000 order lines per wave slice) with 90-second spacing.\nStep 4: Restart Acumax Wave Dispatcher thread pool.\n\nOWNING SUPPORT GROUP: Acumax Support (Escalation to Core DBA Team)."
+    },
+    {
+      "kb_id": "KB0038912",
+      "title": "SAP EAI Middleware IDoc DELVRY03 Sequence Inversion & Queue Flusher SOP",
+      "category": "EAI Middleware",
+      "tags": ["SAP", "EAI", "IDoc", "DELVRY03", "DESADV", "Sequence Mismatch", "Head of Line Blocking"],
+      "applicable_stages": ["SAP", "EAI"],
+      "content": "OVERVIEW: Outbound deliveries generated in SAP ECC use IDoc message DELVRY03 transmitted via RFC to the EAI WebMethods/Broker message queue. If network latency or dual dispatcher threads cause IDocs to arrive out of strict chronological order, the EAI FIFO transformer rejects the message with IDOC_SEQ_MISMATCH_RECORD_REJECTED. The strict FIFO policy causes head-of-line blocking, accumulating tens of thousands of queued messages.\n\nDIAGNOSTIC CRITERIA:\n1. EAI broker queue depth > 5,000 on 'Q_SAP_TO_ACUMAX_DELVRY'.\n2. Error message: IDOC_SEQ_MISMATCH_RECORD_REJECTED indicating expected seq N but received N+1.\n3. Acumax inbound delivery tables show 0 incoming records while SAP SM58 / WE02 shows green dispatched status.\n\nREMEDIATION PROCEDURE (SOP-EAI-389):\nStep 1: Pause inbound broker ingestion on queue 'Q_SAP_TO_ACUMAX_DELVRY'.\nStep 2: Execute EAI Quarantine Tool script to extract the offending out-of-order IDoc into the exception staging area.\nStep 3: Trigger sequence re-sync utility: python /opt/eai/bin/resync_idoc_sequence.py --dc <DC_CODE> --expected <EXPECTED_SEQ>.\nStep 4: Unpause queue broker with relaxed sequence tolerance mode for 15 minutes.\nStep 5: Re-inject quarantined IDoc once baseline sequence catches up.\n\nOWNING SUPPORT GROUP: EAI Support (Middleware Integration Operations)."
+    },
+    {
+      "kb_id": "KB0029410",
+      "title": "Sortation Conveyor Scanner Optical Divert Calibration & Jackpot Recirculation SOP",
+      "category": "WCS / Automation",
+      "tags": ["Ship", "Conveyor", "Sortation", "Cognex", "Barcode Scanner", "Jackpot", "Photo-eye", "WCS"],
+      "applicable_stages": ["Ship", "Pack"],
+      "content": "OVERVIEW: High-speed automated sortation lines utilize overhead optical line-scan cameras (Cognex / SICK) paired with trigger photo-eyes (PE-701) to read carton LPN barcodes within a 250ms window. If camera focus drifts, lens surfaces become obscured with corrugated dust, or conveyor belt tachometer timing slips, the WCS divergence engine registers SCAN_ERR_TIMEOUT_NO_READ and safely diverts cartons to the default jackpot recirculation loop.\n\nDIAGNOSTIC CRITERIA:\n1. Sortation Divert Error Rate exceeds 10% on designated lane.\n2. WCS logs indicate SCAN_ERR_TIMEOUT_NO_READ.\n3. Physical packages accumulating at jackpot loop high water sensor.\n\nREMEDIATION PROCEDURE (SOP-AUTO-294):\nStep 1: Route jackpot spur clear crew to manually scan and stage recirculated cartons to prevent physical jam.\nStep 2: Clean optical scan head lenses using approved isopropyl wipes.\nStep 3: In WCS Engineering UI, increase the barcode decode timeout window from 250ms to 380ms temporarily.\nStep 4: Recalibrate belt speed tachometer pulse offset on PLC controller.\nStep 5: Verify 10 test cartons divert accurately to shipping lanes 21-26.\n\nOWNING SUPPORT GROUP: Conveyor & WCS Automation Ops."
+    },
+    {
+      "kb_id": "KB0052104",
+      "title": "Truck Close & EDI 856 ASN Generation Failure with Ghost Split Items SOP",
+      "category": "Shipping & EDI",
+      "tags": ["Truck Close", "EDI 856", "ASN", "Bill of Lading", "BOL", "Ghost Split", "Acumax"],
+      "applicable_stages": ["Truck Close", "Ship"],
+      "content": "OVERVIEW: When closing an outbound trailer, Acumax triggers outbound EDI 856 (Advance Shipping Notice) transmission. If an order line was split during picking (e.g., partial quantity in carton A, remaining in carton B) and the split line was canceled or re-slotted without clearing the staging reference, the EDI 856 generator fails with ERR_ASN_856_LINE_UNMATCHED. This blocks generation of the legal Bill of Lading (BOL) and holds the trailer at the dock.\n\nDIAGNOSTIC CRITERIA:\n1. Trailer close fails with error ERR_ASN_856_LINE_UNMATCHED.\n2. EDI staging table contains split record with status 'SPLIT_PENDING' and null carton reference.\n3. Manifest carton count differs from EDI line count by exactly 1.\n\nREMEDIATION PROCEDURE (SOP-SHP-521):\nStep 1: In Acumax Shipping Console, navigate to 'Trailer Close Reconciliation' -> Enter Trailer ID.\nStep 2: Locate the unconfirmed split line item referenced in the EDI error log.\nStep 3: Execute 'Reconcile Orphan Split Line' action, selecting 'Void Canceled Split Portion'.\nStep 4: Force EDI 856 ASN regeneration from Acumax Outbound EDI Manager.\nStep 5: Verify EDI 856 acknowledgment 997 received; release trailer and print final Bill of Lading (BOL).\n\nOWNING SUPPORT GROUP: Acumax Support (Outbound Shipping Module)."
+    },
+    {
+      "kb_id": "KB0061205",
+      "title": "Cold Chain Batch Integrity & SAP Material Master Flag Synchronization SOP",
+      "category": "Master Data & Cold Chain",
+      "tags": ["Pick", "Cold Chain", "SAP", "Material Master", "MARA-TEMPB", "Biologics", "Refrigerated"],
+      "applicable_stages": ["Pick", "SAP"],
+      "content": "OVERVIEW: Cold chain pharmaceutical products (2-8°C biologics, insulins, vaccines) require strict temperature profile validation during warehouse picking. If the SAP ECC overnight batch synchronization pushes an incorrect storage condition flag (e.g., MARA-TEMPB = 'AMBIENT_15_25' instead of 'COLD_2_8'), Acumax WMS triggers safety interlock error BATCH_TEMP_RANGE_INVALID_BLOCK and halts RF picking to prevent medication compromise.\n\nDIAGNOSTIC CRITERIA:\n1. RF guns throw error BATCH_TEMP_RANGE_INVALID_BLOCK in Cold Chain zone.\n2. Discrepancy between SAP MM03 storage conditions and Acumax SKU profile.\n3. Time out of refrigeration (TOR) alarm active on staged picking totes.\n\nREMEDIATION PROCEDURE (SOP-COLD-612):\nStep 1: Immediately move staged pick totes back into 2-8°C walk-in coolers to prevent temperature excursion.\nStep 2: Contact Master Data Management (MDM) emergency hotline to rollback MARA-TEMPB table changes in SAP ECC for affected plant.\nStep 3: Trigger delta master data sync interface RFC_SAP_ACUMAX_MAT_SYNC.\nStep 4: Verify Acumax SKU temperature profile reflects 'COLD_2_8' across all affected SKUs.\nStep 5: Resume Cold Chain wave picking tasks on RF terminals.\n\nOWNING SUPPORT GROUP: SAP Master Data Support (Co-assigned to DC Quality Assurance)."
+    }
+  ],
+  "problem_records": [
+    {
+      "problem_id": "PRB0010892",
+      "title": "High-Volume DC Acumax Wave Deadlock on Concurrent Bulk Replenishment",
+      "root_cause_summary": "Race condition in Acumax WMS v4.2.1 when wave allocation queries table WAVE_HDR_DTL simultaneously with automated high-velocity replenishment trigger. Lock escalation causes deadlock.",
+      "permanent_fix": "Applied Acumax Patch WMS-4.2.1-HF08 which introduces optimistic row locking and isolated replenishment transactions.",
+      "related_kbs": ["KB0041829"]
+    },
+    {
+      "problem_id": "PRB0010544",
+      "title": "EAI Inbound Broker Sequence Inversion during Network Packet Reordering",
+      "root_cause_summary": "Multi-threaded RFC gateway in EAI WebMethods permitted packet interleaving under sustained 500+ msg/sec bursts, triggering strict FIFO sequence check rejects.",
+      "permanent_fix": "Configured EAI adapter to use single-threaded partitioned consumer per DC routing key with 5-second out-of-order jitter buffer.",
+      "related_kbs": ["KB0038912"]
+    },
+    {
+      "problem_id": "PRB0009831",
+      "title": "Conveyor Sorter High-Speed Scanner Optical Drift & Dust Accumulation",
+      "root_cause_summary": "Accumulation of corrugated fiber dust on Cognex overhead optical sensors reduces contrast sensitivity, causing read timeouts at conveyor speeds > 320 ft/min.",
+      "permanent_fix": "Installed positive air pressure blowers on camera housings and automated daily lens cleaning schedule.",
+      "related_kbs": ["KB0029410"]
+    },
+    {
+      "problem_id": "PRB0011240",
+      "title": "Truck Close EDI 856 ASN Rejection on Unconfirmed Partial Order Splits",
+      "root_cause_summary": "Acumax picking engine created temporary split child lines that were not purged upon pick cancellation, creating mismatch against shipping manifest header count.",
+      "permanent_fix": "Added database trigger on WAVE_PICK_DTL to automatically purge ghost split records upon wave completion.",
+      "related_kbs": ["KB0052104"]
+    }
+  ]
+}
