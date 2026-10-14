@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { FinalRCAResult, RCADecisionRequest } from "../lib/types";
-import { X, ThumbsUp, Edit3, XCircle, CheckCircle } from "lucide-react";
+import { X, CheckCircle2, RotateCcw } from "lucide-react";
 
 interface DecisionModalProps {
   isOpen: boolean;
@@ -34,7 +34,11 @@ export const DecisionModal: React.FC<DecisionModalProps> = ({
         incident_id: rca.incident_id,
         action: mode,
         operator_name: "Operations Commander (Marcus / Ops Console)",
-        notes: operatorNotes || (mode === "APPROVE" ? "Approved as submitted by AI RCA Supervisor" : ""),
+        notes:
+          operatorNotes ||
+          (mode === "APPROVE"
+            ? "Approved as submitted by diagnostic system"
+            : ""),
         edited_root_cause: mode === "EDIT" ? editedRootCause : undefined,
         edited_assignment_group: mode === "EDIT" ? editedGroup : undefined,
       };
@@ -48,149 +52,123 @@ export const DecisionModal: React.FC<DecisionModalProps> = ({
   };
 
   const titles = {
-    APPROVE: "Approve AI RCA Proposal & Commit Routing",
-    EDIT: "Edit & Override RCA Diagnosis",
-    REJECT: "Reject RCA Proposal & Request Telemetry",
+    APPROVE: "Approve Resolution & Route Ticket",
+    EDIT: "Modify Resolution Details",
+    REJECT: "Dismiss Diagnosis & Escalate",
   };
 
   const descriptions = {
-    APPROVE: "You are validating this AI-generated root cause diagnosis and authorizing ticket reassignment and remediation dispatch.",
-    EDIT: "Modify the root cause summary or target assignment group based on operational discretion before synchronizing to ServiceNow.",
-    REJECT: "Reject the AI analysis. The ticket will remain escalated for manual tier 3 engineering investigation.",
+    APPROVE:
+      "Validates the identified root cause and synchronizes the recovery procedure and group assignment directly to ServiceNow.",
+    EDIT:
+      "Adjust the diagnosis summary or target assignment group before pushing the updates to ServiceNow.",
+    REJECT:
+      "Dismisses this diagnostic recommendation. The ticket remains open for manual Tier 3 investigation.",
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl border border-slate-200 w-full max-w-xl overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+    <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-md flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl border border-black/[0.08] w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
-        <div className={`p-4 border-b text-white flex items-center justify-between ${
-          mode === "APPROVE"
-            ? "bg-emerald-800 border-emerald-900"
-            : mode === "EDIT"
-            ? "bg-[#005086] border-[#003b64]"
-            : "bg-red-800 border-red-900"
-        }`}>
-          <div className="flex items-center space-x-2">
-            {mode === "APPROVE" && <ThumbsUp className="w-4 h-4" />}
-            {mode === "EDIT" && <Edit3 className="w-4 h-4" />}
-            {mode === "REJECT" && <XCircle className="w-4 h-4" />}
-            <h3 className="font-bold text-sm">{titles[mode]}</h3>
+        <div className="p-5 border-b border-black/[0.04] flex items-center justify-between">
+          <div>
+            <h3 className="font-semibold text-sm text-zinc-900">
+              {titles[mode]}
+            </h3>
+            <p className="text-xs text-zinc-500 mt-0.5">
+              Incident {rca.incident_number} &middot; {rca.distribution_center}
+            </p>
           </div>
           <button
             onClick={onClose}
-            className="text-white/80 hover:text-white p-1 rounded transition-colors"
+            className="w-7 h-7 rounded-full text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 flex items-center justify-center transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-4 space-y-3 text-xs">
-          <p className="text-slate-600 leading-normal">
-            {descriptions[mode]}
-          </p>
+        <form onSubmit={handleSubmit} className="p-5 space-y-4 text-xs">
+          <p className="text-zinc-600 leading-relaxed">{descriptions[mode]}</p>
 
-          <div className="bg-slate-50 border border-slate-200 rounded p-2.5 text-slate-700">
-            <div className="flex justify-between font-mono text-[11px] mb-1">
-              <span>Incident ID: <strong>{rca.incident_number}</strong></span>
-              <span>DC: <strong>{rca.distribution_center}</strong></span>
-            </div>
-            <div className="text-[11px] text-slate-500">
-              Process Stage: <span className="font-semibold text-slate-800">{rca.process_stage}</span>
-            </div>
-          </div>
-
-          {mode === "EDIT" && (
-            <>
+          {mode === "EDIT" ? (
+            <div className="space-y-3">
               <div>
-                <label className="block text-slate-700 font-bold mb-1">
-                  Adjusted Root Cause Summary:
+                <label className="font-medium text-zinc-700 block mb-1">
+                  Root Cause Summary
                 </label>
                 <textarea
                   rows={3}
                   value={editedRootCause}
                   onChange={(e) => setEditedRootCause(e.target.value)}
-                  className="w-full p-2 border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#005086]"
-                  required
+                  className="w-full p-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-xs text-zinc-900 focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20 focus:bg-white transition-all"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-700 font-bold mb-1">
-                  Reassign To Assignment Group:
+                <label className="font-medium text-zinc-700 block mb-1">
+                  Assignment Group
                 </label>
-                <select
+                <input
+                  type="text"
                   value={editedGroup}
                   onChange={(e) => setEditedGroup(e.target.value)}
-                  className="w-full p-2 border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#005086]"
-                >
-                  <option value="Acumax Support">Acumax Support</option>
-                  <option value="SAP Support">SAP Support</option>
-                  <option value="EAI Support">EAI Support</option>
-                  <option value="Conveyor & WCS Automation Ops">Conveyor & WCS Automation Ops</option>
-                  <option value="Distribution Ops Incident Management">Distribution Ops Incident Management</option>
-                  <option value="Core DBA Team">Core DBA Team</option>
-                </select>
+                  className="w-full p-2 bg-zinc-50 border border-zinc-200 rounded-xl text-xs text-zinc-900 focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20 focus:bg-white transition-all"
+                />
               </div>
-            </>
+            </div>
+          ) : (
+            <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-200/60 space-y-1.5">
+              <div className="font-semibold text-zinc-900">
+                Summary: {rca.root_cause_summary}
+              </div>
+              <div className="text-zinc-500 text-[11px]">
+                Target Group: <span className="font-medium text-zinc-800">{rca.predicted_assignment_group}</span>
+              </div>
+            </div>
           )}
 
           <div>
-            <label className="block text-slate-700 font-bold mb-1">
-              {mode === "REJECT" ? "Rejection Reason & Required Telemetry (Required):" : "Operator Work Notes / Comments (Optional):"}
+            <label className="font-medium text-zinc-700 block mb-1">
+              Operator Work Notes (Optional)
             </label>
             <textarea
-              rows={mode === "REJECT" ? 3 : 2}
+              rows={2}
+              placeholder="Add verification notes or instructions for the on-call team..."
               value={operatorNotes}
               onChange={(e) => setOperatorNotes(e.target.value)}
-              placeholder={
-                mode === "REJECT"
-                  ? "E.g., Contradiction noted in database dump; requesting physical optical alignment telemetry from shift engineer..."
-                  : "Enter additional context to append to ServiceNow work notes..."
-              }
-              className="w-full p-2 border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#005086]"
-              required={mode === "REJECT"}
+              className="w-full p-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-xs text-zinc-900 focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20 focus:bg-white transition-all placeholder-zinc-400"
             />
           </div>
 
-          {/* ServiceNow Payload Preview */}
-          <div className="bg-slate-900 text-slate-300 p-2.5 rounded font-mono text-[10px] select-text">
-            <span className="text-slate-400 block mb-0.5">// ServiceNow Target Payload Preview</span>
-            <code>
-              {JSON.stringify(
-                {
-                  incident_id: rca.incident_id,
-                  u_rca_status: mode,
-                  state: mode === "APPROVE" ? "Resolved (Pending Validation)" : mode === "REJECT" ? "Escalated to Engineering" : "In Progress (Operator Modified)",
-                  assignment_group: mode === "EDIT" ? editedGroup : rca.predicted_assignment_group,
-                },
-                null,
-                2
-              )}
-            </code>
-          </div>
-
-          {/* Actions */}
-          <div className="pt-2 border-t border-slate-200 flex items-center justify-end space-x-2">
+          {/* Footer Actions */}
+          <div className="pt-3 border-t border-black/[0.04] flex items-center justify-end gap-2">
             <button
               type="button"
               onClick={onClose}
-              className="px-3 py-1.5 border border-slate-300 rounded text-slate-700 hover:bg-slate-100 transition-colors"
+              disabled={isSubmitting}
+              className="px-4 py-2 rounded-full text-xs font-medium text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 transition-colors"
             >
               Cancel
             </button>
+
             <button
               type="submit"
               disabled={isSubmitting}
-              className={`px-4 py-1.5 rounded font-semibold text-white shadow-xs transition-colors disabled:opacity-50 ${
-                mode === "APPROVE"
-                  ? "bg-emerald-700 hover:bg-emerald-800"
-                  : mode === "EDIT"
-                  ? "bg-[#005086] hover:bg-[#003b64]"
-                  : "bg-red-700 hover:bg-red-800"
+              className={`px-5 py-2 rounded-full text-xs font-medium text-white transition-all flex items-center gap-1.5 shadow-xs ${
+                mode === "REJECT"
+                  ? "bg-rose-600 hover:bg-rose-700"
+                  : "bg-[#0071e3] hover:bg-[#0077ed]"
               }`}
             >
-              {isSubmitting ? "Committing..." : `Confirm ${mode}`}
+              {isSubmitting ? (
+                <>
+                  <RotateCcw className="w-3.5 h-3.5 animate-spin" />
+                  <span>Synchronizing...</span>
+                </>
+              ) : (
+                <span>Confirm & Update Ticket</span>
+              )}
             </button>
           </div>
         </form>

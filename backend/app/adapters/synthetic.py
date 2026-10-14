@@ -60,41 +60,17 @@ class SyntheticServiceNowAdapter(ServiceNowAdapter):
 
 class SyntheticSplunkAdapter(SplunkAdapter):
     """
-    Adapter implementing Splunk log telemetry access using synthetic log streams.
+    Adapter implementing Splunk log telemetry access using the simulated Log Lake.
     Can be swapped with a live Splunk REST API / HEC client.
     """
     def __init__(self, data_file: Path = settings.DATA_FILE):
         self.data_file = data_file
-        self._log_index: Dict[str, List[str]] = {}
-        self._load_logs()
-
-    def _load_logs(self):
-        if not self.data_file.exists():
-            return
-        with open(self.data_file, "r", encoding="utf-8") as f:
-            data = json.load(f)
-            for inc in data.get("incidents", []):
-                inc_id = inc["incident_id"]
-                ci = inc.get("configuration_item", "")
-                logs = inc.get("synthetic_logs", [])
-                self._log_index[inc_id] = logs
-                self._log_index[inc.get("number", "")] = logs
-                if ci:
-                    self._log_index[ci] = logs
+        from app.adapters.log_lake import LogLakeEngine
+        self.lake = LogLakeEngine.get_instance()
 
     def query_logs(self, correlation_id: str, system: Optional[str] = None, limit: int = 50) -> List[str]:
-        # Search by incident_id, CI, or partial match
-        if correlation_id in self._log_index:
-            return self._log_index[correlation_id][:limit]
+        return self.lake.query_raw_lines(correlation_id=correlation_id, system=system, limit=limit)
 
-        # Scan for matching log records containing system or correlation token
-        for key, logs in self._log_index.items():
-            if correlation_id.lower() in key.lower() or (system and system.lower() in key.lower()):
-                return logs[:limit]
-
-        # Return default logs from first available incident if unindexed
-        first_available = next(iter(self._log_index.values()), [])
-        return first_available[:limit]
 
 
 class SyntheticKnowledgeBaseAdapter(KnowledgeBaseAdapter):

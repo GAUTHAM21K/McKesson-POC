@@ -88,6 +88,42 @@ def get_incident(incident_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/logs/search", tags=["Telemetry Log Lake"])
+def search_log_lake(
+    query: Optional[str] = Query(None, description="Free text or error token search, e.g. 'ORA-00054' or 'Deadlock'"),
+    ci: Optional[str] = Query(None, description="Configuration Item, e.g. 'ACUMAX-WMS-PROD-CLUSTER-04'"),
+    dc_code: Optional[str] = Query(None, description="DC facility code, e.g. 'DC-04'"),
+    level: Optional[str] = Query(None, description="Log level filter: 'ERROR', 'WARN', 'CRIT', 'FATAL', 'INFO'"),
+    start_time: Optional[str] = Query(None, description="Earliest timestamp ISO string"),
+    end_time: Optional[str] = Query(None, description="Latest timestamp ISO string"),
+    limit: int = Query(50, ge=1, le=200, description="Max lines to return")
+):
+    """
+    Direct search across the simulated enterprise Log Lake (Splunk / OpenSearch).
+    Enables dynamic, decoupled telemetry search with time-window and CI pruning.
+    """
+    try:
+        from app.adapters.log_lake import LogLakeEngine
+        lake = LogLakeEngine.get_instance()
+        results = lake.search(
+            query=query,
+            ci=ci,
+            dc_code=dc_code,
+            level=level,
+            start_time=start_time,
+            end_time=end_time,
+            limit=limit
+        )
+        return {
+            "status": "success",
+            "cluster": "McKesson-DistOps-SIEM-LogLake-01",
+            "total_matches": len(results),
+            "events": results
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Log Lake search failed: {str(e)}")
+
+
 @router.post("/rca/generate", tags=["AI Agents"])
 async def generate_rca(req: RCAGenerationRequest):
     """

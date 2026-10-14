@@ -39,5 +39,16 @@ def get_incident_by_id(incident_id: str) -> Dict[str, Any]:
     incidents = get_all_incidents()
     for inc in incidents:
         if inc.get("incident_id") == incident_id or inc.get("number") == incident_id:
-            return inc
+            res = dict(inc)
+            # Dynamically query Log Lake for this incident's time-window and CI telemetry
+            try:
+                from app.adapters.log_lake import LogLakeEngine
+                lake = LogLakeEngine.get_instance()
+                lake_logs = lake.get_logs_for_incident(res)
+                if lake_logs:
+                    res["synthetic_logs"] = lake_logs
+            except Exception as e:
+                logger.warning(f"Log lake dynamic search fallback: {e}")
+            return res
     raise ValueError(f"Incident with ID '{incident_id}' not found.")
+

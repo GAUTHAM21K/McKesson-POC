@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import Link from "next/link";
 import { IncidentSummary } from "../lib/types";
-import { Search, Filter, AlertCircle, ArrowRight } from "lucide-react";
+import { Search, MapPin, Clock } from "lucide-react";
 
 interface IncidentListProps {
   incidents: IncidentSummary[];
@@ -18,167 +17,134 @@ export const IncidentList: React.FC<IncidentListProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [priorityFilter, setPriorityFilter] = useState<string>("ALL");
-  const [stageFilter, setStageFilter] = useState<string>("ALL");
 
   const filtered = incidents.filter((inc) => {
     const matchesSearch =
       inc.number.toLowerCase().includes(searchTerm.toLowerCase()) ||
       inc.short_description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      inc.distribution_center.toLowerCase().includes(searchTerm.toLowerCase());
+      inc.distribution_center.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      inc.process_stage.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesPriority =
       priorityFilter === "ALL" || inc.priority.startsWith(priorityFilter);
 
-    const matchesStage =
-      stageFilter === "ALL" || inc.process_stage.toLowerCase() === stageFilter.toLowerCase();
-
-    return matchesSearch && matchesPriority && matchesStage;
+    return matchesSearch && matchesPriority;
   });
 
   return (
-    <div className="bg-white border border-slate-200 rounded-md shadow-xs">
-      {/* Table Toolbar */}
-      <div className="p-3 border-b border-slate-200 bg-slate-50 flex flex-wrap items-center justify-between gap-2 text-xs">
-        <div className="flex items-center space-x-2 flex-1 min-w-[240px]">
-          <div className="relative w-full max-w-xs">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
-            <input
-              type="text"
-              placeholder="Search by INC#, DC, or symptom..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#005086] focus:border-[#005086]"
-            />
-          </div>
-          <span className="text-slate-500 font-mono text-[11px]">
-            {filtered.length} of {incidents.length} Records
-          </span>
+    <div className="flex flex-col h-full bg-white/70 backdrop-blur-sm border border-black/[0.06] rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.02)] overflow-hidden">
+      {/* Search & Filter Header */}
+      <div className="p-3.5 border-b border-black/[0.04] space-y-2.5">
+        <div className="relative">
+          <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            placeholder="Search incidents, facilities, stages..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-8 pr-3 py-1.5 bg-zinc-100/80 hover:bg-zinc-100 focus:bg-white border border-transparent focus:border-zinc-300 rounded-xl text-xs text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#0071e3]/15 transition-all"
+          />
         </div>
 
-        {/* Filters */}
-        <div className="flex items-center space-x-2">
-          <div className="flex items-center space-x-1">
-            <span className="text-slate-500">Priority:</span>
-            <select
-              value={priorityFilter}
-              onChange={(e) => setPriorityFilter(e.target.value)}
-              className="bg-white border border-slate-300 rounded px-2 py-1 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#005086]"
-            >
-              <option value="ALL">All Priorities</option>
-              <option value="P1">P1 - Critical</option>
-              <option value="P2">P2 - Major</option>
-            </select>
-          </div>
+        {/* Filter Pills */}
+        <div className="flex items-center gap-1.5 text-[11px]">
+          {(["ALL", "P1", "P2"] as const).map((p) => {
+            const count =
+              p === "ALL"
+                ? incidents.length
+                : incidents.filter((i) => i.priority.startsWith(p)).length;
+            const label = p === "ALL" ? "All" : p === "P1" ? "P1 Critical" : "P2 Major";
+            const isActive = priorityFilter === p;
 
-          <div className="flex items-center space-x-1">
-            <span className="text-slate-500">Stage:</span>
-            <select
-              value={stageFilter}
-              onChange={(e) => setStageFilter(e.target.value)}
-              className="bg-white border border-slate-300 rounded px-2 py-1 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#005086]"
-            >
-              <option value="ALL">All Stages</option>
-              <option value="SAP">SAP</option>
-              <option value="EAI">EAI</option>
-              <option value="Acumax">Acumax</option>
-              <option value="Pick">Pick</option>
-              <option value="Ship">Ship</option>
-              <option value="Truck Close">Truck Close</option>
-            </select>
-          </div>
+            return (
+              <button
+                key={p}
+                onClick={() => setPriorityFilter(p)}
+                className={`px-2.5 py-1 rounded-full font-medium transition-all ${
+                  isActive
+                    ? "bg-zinc-900 text-white shadow-xs"
+                    : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200/70"
+                }`}
+              >
+                {label} ({count})
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Dense Enterprise Data Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse text-xs">
-          <thead>
-            <tr className="bg-slate-100/80 border-b border-slate-200 text-slate-600">
-              <th className="py-2 px-3 w-24">Priority</th>
-              <th className="py-2 px-3 w-28">Incident #</th>
-              <th className="py-2 px-3 w-24">Stage</th>
-              <th className="py-2 px-3 w-44">Distribution Center</th>
-              <th className="py-2 px-3">Description</th>
-              <th className="py-2 px-3 w-28">State</th>
-              <th className="py-2 px-3 w-24 text-right">Action</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-200">
-            {filtered.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="text-center py-8 text-slate-500">
-                  No active incidents matching the selected filters.
-                </td>
-              </tr>
-            ) : (
-              filtered.map((inc) => {
-                const isSelected = inc.incident_id === selectedId;
-                const isP1 = inc.priority.startsWith("P1");
-                return (
-                  <tr
-                    key={inc.incident_id}
-                    onClick={() => onSelectIncident(inc.incident_id)}
-                    className={`cursor-pointer transition-colors ${
-                      isSelected
-                        ? "bg-sky-50 border-l-4 border-l-[#005086]"
-                        : "hover:bg-slate-50"
+      {/* Incident Cards Queue */}
+      <div className="flex-1 overflow-y-auto p-2 space-y-1.5 divide-y-0">
+        {filtered.length === 0 ? (
+          <div className="py-12 text-center text-xs text-zinc-400">
+            No incidents found matching &quot;{searchTerm}&quot;
+          </div>
+        ) : (
+          filtered.map((inc) => {
+            const isSelected = inc.incident_id === selectedId;
+            const isP1 = inc.priority.startsWith("P1");
+            const isResolved = inc.state.includes("Resolved");
+
+            return (
+              <div
+                key={inc.incident_id}
+                onClick={() => onSelectIncident(inc.incident_id)}
+                className={`group p-3 rounded-xl cursor-pointer transition-all duration-150 border text-left ${
+                  isSelected
+                    ? "bg-white border-zinc-300/80 shadow-[0_2px_8px_rgba(0,0,0,0.04)] ring-1 ring-[#0071e3]/30"
+                    : "bg-transparent hover:bg-zinc-100/60 border-transparent"
+                }`}
+              >
+                {/* Card Top: Number, Severity Dot, Stage */}
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`w-2 h-2 rounded-full shrink-0 ${
+                        isResolved
+                          ? "bg-emerald-500"
+                          : isP1
+                          ? "bg-rose-500"
+                          : "bg-amber-500"
+                      }`}
+                    />
+                    <span className="font-mono text-xs font-semibold text-zinc-900">
+                      {inc.number}
+                    </span>
+                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-zinc-100 text-zinc-600">
+                      {inc.process_stage}
+                    </span>
+                  </div>
+
+                  <span
+                    className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+                      isP1
+                        ? "text-rose-700 bg-rose-50"
+                        : "text-amber-700 bg-amber-50"
                     }`}
                   >
-                    <td className="py-2 px-3">
-                      <span
-                        className={`inline-block px-2 py-0.5 rounded font-mono font-bold text-[11px] ${
-                          isP1
-                            ? "bg-red-100 text-red-800 border border-red-200"
-                            : "bg-amber-100 text-amber-800 border border-amber-200"
-                        }`}
-                      >
-                        {isP1 ? "P1 - CRIT" : "P2 - MAJ"}
-                      </span>
-                    </td>
-                    <td className="py-2 px-3 font-mono font-medium text-slate-900">
-                      {inc.number}
-                    </td>
-                    <td className="py-2 px-3 font-medium text-slate-700">
-                      <span className="bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 font-mono text-[11px]">
-                        {inc.process_stage}
-                      </span>
-                    </td>
-                    <td className="py-2 px-3 text-slate-700 font-medium truncate max-w-[170px]" title={inc.distribution_center}>
-                      {inc.distribution_center}
-                    </td>
-                    <td className="py-2 px-3 text-slate-600 truncate max-w-[340px]" title={inc.short_description}>
-                      {inc.short_description}
-                    </td>
-                    <td className="py-2 px-3">
-                      <span className={`inline-block px-1.5 py-0.5 rounded text-[11px] font-medium ${
-                        inc.state.includes("Resolved")
-                          ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
-                          : inc.state.includes("Escalated")
-                          ? "bg-purple-100 text-purple-800 border border-purple-200"
-                          : "bg-slate-100 text-slate-700 border border-slate-200"
-                      }`}>
-                        {inc.state}
-                      </span>
-                    </td>
-                    <td className="py-2 px-3 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <Link
-                          href={`/dashboard/investigation/${inc.incident_id}`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-blue-800 hover:bg-blue-900 text-white flex items-center gap-1 transition-colors"
-                          title="Open dedicated investigation workspace"
-                        >
-                          <span>Open RCA</span>
-                          <ArrowRight className="w-3 h-3" />
-                        </Link>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+                    {isP1 ? "P1" : "P2"}
+                  </span>
+                </div>
+
+                {/* Card Title */}
+                <h4 className="text-xs font-medium text-zinc-800 line-clamp-2 leading-snug mb-2">
+                  {inc.short_description}
+                </h4>
+
+                {/* Card Footer: DC & Status */}
+                <div className="flex items-center justify-between text-[11px] text-zinc-400 font-normal">
+                  <div className="flex items-center gap-1 truncate max-w-[180px]">
+                    <MapPin className="w-3 h-3 shrink-0 text-zinc-400" />
+                    <span className="truncate">{inc.distribution_center}</span>
+                  </div>
+                  <span className="font-mono text-[10px] text-zinc-500">
+                    {inc.state}
+                  </span>
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
     </div>
   );

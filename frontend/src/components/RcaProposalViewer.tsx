@@ -3,23 +3,23 @@
 import React, { useState } from "react";
 import { FinalRCAResult } from "../lib/types";
 import {
-  CheckCircle,
-  AlertTriangle,
-  FileCheck,
-  ChevronDown,
-  ChevronRight,
-  Shield,
-  Layers,
-  Wrench,
-  ThumbsUp,
-  Edit3,
-  XCircle,
+  CheckCircle2,
+  AlertCircle,
+  Copy,
+  Check,
   ExternalLink,
+  ChevronRight,
+  ShieldAlert,
+  ArrowRight,
+  Clock,
+  Layers,
+  Sparkles,
 } from "lucide-react";
 
 interface RcaProposalViewerProps {
   rca: FinalRCAResult | null;
   isLoading: boolean;
+  onRunRCA: () => void;
   onApprove: () => void;
   onEdit: () => void;
   onReject: () => void;
@@ -29,293 +29,232 @@ interface RcaProposalViewerProps {
 export const RcaProposalViewer: React.FC<RcaProposalViewerProps> = ({
   rca,
   isLoading,
+  onRunRCA,
   onApprove,
   onEdit,
   onReject,
   lastDecisionMessage,
 }) => {
-  const [showAgentTrail, setShowAgentTrail] = useState(false);
+  const [copiedStep, setCopiedStep] = useState<number | null>(null);
 
+  const handleCopy = (text: string, stepNum: number) => {
+    navigator.clipboard.writeText(text);
+    setCopiedStep(stepNum);
+    setTimeout(() => setCopiedStep(null), 2000);
+  };
+
+  // 1. Loading State
   if (isLoading) {
     return (
-      <div className="bg-white border border-slate-200 rounded-md p-8 text-center h-full flex flex-col items-center justify-center shadow-xs">
-        <div className="w-8 h-8 border-3 border-[#005086] border-t-transparent rounded-full animate-spin mb-3"></div>
-        <h3 className="text-sm font-semibold text-slate-800">
-          Orchestrating LangGraph Multi-Agent RCA...
+      <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
+        <div className="relative flex h-8 w-8 mb-4">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#0071e3] opacity-30"></span>
+          <span className="relative inline-flex rounded-full h-8 w-8 bg-[#0071e3]/10 text-[#0071e3] items-center justify-center">
+            <span className="w-4 h-4 border-2 border-[#0071e3] border-t-transparent rounded-full animate-spin" />
+          </span>
+        </div>
+        <h3 className="text-sm font-semibold text-zinc-900">
+          Analyzing Telemetry & Correlating Runbooks
         </h3>
-        <p className="text-xs text-slate-500 max-w-sm mt-1">
-          Sequential execution: Incident Understanding &rarr; Context Retrieval (RAG) &rarr; RCA Reasoning &rarr; Remediation & Ownership &rarr; Supervisor Gate.
+        <p className="text-xs text-zinc-500 max-w-md mt-1 leading-relaxed">
+          Evaluating system logs, cross-referencing standard operating procedures, and ruling out false leads...
         </p>
       </div>
     );
   }
 
+  // 2. Empty / Unanalyzed State
   if (!rca) {
     return (
-      <div className="bg-white border border-dashed border-slate-300 rounded-md p-8 text-center h-full flex flex-col items-center justify-center text-slate-500 shadow-xs">
-        <FileCheck className="w-8 h-8 text-slate-400 mb-2" />
-        <h3 className="text-xs font-semibold text-slate-700">No RCA Proposal Generated Yet</h3>
-        <p className="text-[11px] text-slate-500 max-w-xs mt-1">
-          Click <strong>&quot;Run AI Root Cause Analysis&quot;</strong> on the incident viewer to trigger the multi-agent reasoning supervisor.
+      <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
+        <div className="w-12 h-12 rounded-2xl bg-zinc-100 flex items-center justify-center text-zinc-400 mb-3 border border-black/[0.04]">
+          <Layers className="w-5 h-5" />
+        </div>
+        <h3 className="text-sm font-semibold text-zinc-900">
+          No Diagnostic Report Generated
+        </h3>
+        <p className="text-xs text-zinc-500 max-w-md mt-1 leading-relaxed">
+          Run automated diagnosis to evaluate system error logs, identify the root cause, and formulate the approved recovery procedure.
         </p>
+        <button
+          onClick={onRunRCA}
+          className="mt-4 px-4 py-2 bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-full text-xs font-medium shadow-xs transition-colors"
+        >
+          Run Diagnostic Analysis
+        </button>
       </div>
     );
   }
 
+  // 3. Render Diagnostic Report
   return (
-    <div className="bg-white border border-slate-200 rounded-md shadow-xs flex flex-col h-full overflow-hidden">
-      {/* Top Banner: RCA Proposal Header & Confidence Score */}
-      <div className="p-3 border-b border-slate-200 bg-slate-50 flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[#005086] bg-sky-50 px-2 py-0.5 rounded border border-sky-200">
-            AI Generated RCA Proposal (Supervisor Validated)
-          </span>
-          <h2 className="text-xs font-bold text-slate-900 mt-1">
-            Root Cause Diagnosis for {rca.incident_number} ({rca.process_stage})
-          </h2>
-        </div>
-
-        {/* Confidence Gauge */}
-        <div className="flex items-center space-x-2 bg-white px-3 py-1 rounded border border-slate-200">
-          <div className="text-right">
-            <span className="text-[10px] text-slate-500 block leading-tight">Confidence</span>
-            <span className="font-bold text-emerald-700 text-xs">{rca.confidence_score}% High</span>
-          </div>
-          <div className="w-12 bg-slate-200 h-2 rounded-full overflow-hidden">
-            <div
-              className="bg-emerald-600 h-full rounded-full"
-              style={{ width: `${rca.confidence_score}%` }}
-            ></div>
-          </div>
-        </div>
-      </div>
-
-      {/* Decision Status Banner (if human action was recorded) */}
+    <div className="space-y-6">
+      {/* Confirmation Banner if operator committed decision */}
       {lastDecisionMessage && (
-        <div className="p-2.5 bg-emerald-50 border-b border-emerald-200 text-xs text-emerald-900 flex items-center justify-between">
+        <div className="p-3.5 bg-emerald-50/80 border border-emerald-200/60 rounded-2xl flex items-center justify-between text-xs text-emerald-900">
           <div className="flex items-center gap-2">
-            <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>{lastDecisionMessage}</span>
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span className="font-medium">{lastDecisionMessage}</span>
           </div>
-          <span className="text-[10px] font-mono text-emerald-700 font-bold uppercase">
-            ServiceNow Sync Pending
+          <span className="font-mono text-[11px] text-emerald-700 font-semibold uppercase">
+            ServiceNow Synchronized
           </span>
         </div>
       )}
 
-      {/* Scrollable RCA Findings Body */}
-      <div className="p-4 flex-1 overflow-y-auto space-y-4 text-xs">
-        {/* Section 1: Root Cause Summary & Technical Cause */}
-        <div className="bg-slate-50 border border-slate-200 rounded p-3">
-          <div className="font-bold text-slate-900 text-xs uppercase tracking-wide mb-1 flex items-center gap-1.5">
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
-            <span>Executive Root Cause Summary</span>
+      {/* Root Cause Card */}
+      <div className="bg-white border border-black/[0.06] rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.02)] space-y-4">
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">
+            Diagnostic Finding
+          </span>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-medium border border-emerald-100">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span>{rca.confidence_score}% Diagnostic Confidence</span>
           </div>
-          <p className="text-slate-800 leading-relaxed font-medium">
+        </div>
+
+        {/* Primary Root Cause */}
+        <div>
+          <h3 className="text-base font-semibold text-zinc-900 leading-snug">
             {rca.root_cause_summary}
-          </p>
-
-          <div className="mt-2.5 pt-2 border-t border-slate-200">
-            <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block mb-0.5">
-              Technical Root Cause & Telemetry Detail
-            </span>
-            <p className="text-slate-700 font-mono text-[11px] leading-relaxed bg-white p-2 rounded border border-slate-200">
-              {rca.technical_root_cause}
-            </p>
-          </div>
-          <p className="text-[10px] text-slate-500 mt-1 italic">
-            Rationale: {rca.confidence_rationale}
+          </h3>
+          <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
+            {rca.confidence_rationale}
           </p>
         </div>
 
-        {/* Section 2: Recommended Routing & SLA Risk */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <div className="bg-sky-50/60 border border-sky-200 rounded p-2.5">
-            <span className="text-[10px] font-bold text-sky-800 uppercase tracking-wider block">
-              Predicted Owning Support Group
-            </span>
-            <div className="text-xs font-bold text-[#005086] mt-0.5 flex items-center justify-between">
-              <span>{rca.predicted_assignment_group}</span>
-              <span className="bg-sky-100 text-sky-800 px-1.5 py-0.2 rounded font-mono text-[10px]">
-                {rca.assignment_group_confidence}% Match
-              </span>
-            </div>
-          </div>
+        {/* Technical Detail Box */}
+        <div className="p-3.5 bg-zinc-50 rounded-xl border border-zinc-200/60">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 block mb-1">
+            Technical Evidence & Mechanism
+          </span>
+          <p className="font-mono text-[11px] text-zinc-800 leading-relaxed break-words select-text">
+            {rca.technical_root_cause}
+          </p>
+        </div>
+      </div>
 
-          <div className="bg-slate-50 border border-slate-200 rounded p-2.5">
-            <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider block">
-              SLA Risk Assessment
+      {/* Routing & Governing SOP Pill Bar */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="bg-white border border-black/[0.06] rounded-2xl p-4 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
+          <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider block">
+            Target Assignment Group
+          </span>
+          <div className="flex items-center justify-between mt-1">
+            <span className="text-xs font-semibold text-zinc-900">
+              {rca.predicted_assignment_group}
             </span>
-            <div className="text-xs font-semibold text-red-700 mt-0.5">
-              {rca.sla_risk_level}
-            </div>
+            <span className="text-[11px] text-zinc-500 font-medium">
+              {rca.assignment_group_confidence}% Match
+            </span>
           </div>
         </div>
 
-        {/* Section 3: Evidence Used (Explicit citations) */}
-        <div>
-          <div className="font-bold text-slate-800 text-xs uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
-            <Layers className="w-3.5 h-3.5 text-[#005086]" />
-            <span>Evidence Corroborated ({rca.evidence_used.length} Sources Cited)</span>
-          </div>
-          <div className="border border-slate-200 rounded overflow-hidden">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead className="bg-slate-100 text-slate-600 border-b border-slate-200">
-                <tr>
-                  <th className="py-1.5 px-2.5 w-24">Type</th>
-                  <th className="py-1.5 px-2.5 w-32">Citation</th>
-                  <th className="py-1.5 px-2.5">Supporting Observation</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200 bg-white">
-                {rca.evidence_used.map((ev, idx) => (
-                  <tr key={idx} className="hover:bg-slate-50">
-                    <td className="py-1.5 px-2.5">
-                      <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
-                        {ev.source_type}
-                      </span>
-                    </td>
-                    <td className="py-1.5 px-2.5 font-mono text-[11px] text-slate-800 font-medium">
-                      {ev.citation}
-                    </td>
-                    <td className="py-1.5 px-2.5 text-slate-600 text-[11px]">
-                      {ev.detail}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <div className="bg-white border border-black/[0.06] rounded-2xl p-4 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
+          <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider block">
+            Approved SOP Runbook
+          </span>
+          <div className="flex items-center justify-between mt-1">
+            <span className="text-xs font-semibold text-[#0071e3]">
+              {rca.sop_reference || "Standard Distribution SOP"}
+            </span>
+            <span className="text-[11px] text-zinc-400 font-medium">
+              {rca.sla_risk_level.split(" ")[0]} SLA Risk
+            </span>
           </div>
         </div>
+      </div>
 
-        {/* Section 4: Contradictions / Ruled Out Hypotheses */}
-        {rca.contradictions && rca.contradictions.length > 0 && (
-          <div>
-            <div className="font-bold text-slate-800 text-xs uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
-              <Shield className="w-3.5 h-3.5 text-purple-700" />
-              <span>Contradictions & Ruled Out Hypotheses</span>
-            </div>
-            <div className="space-y-1.5">
-              {rca.contradictions.map((ct, idx) => (
-                <div key={idx} className="p-2 bg-slate-50 border border-slate-200 rounded text-xs">
-                  <div className="flex items-center gap-1.5 text-slate-700 font-semibold">
-                    <span className="text-red-600 line-through">Hypothesis:</span>
-                    <span>{ct.hypothesis_ruled_out}</span>
-                  </div>
-                  <div className="text-slate-600 text-[11px] mt-0.5 pl-3 border-l-2 border-purple-400">
-                    <span className="font-medium text-purple-900">Counter-Evidence: </span>
-                    {ct.counter_evidence}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+      {/* Recommended Recovery Procedure */}
+      <div className="bg-white border border-black/[0.06] rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.02)] space-y-4">
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">
+            Approved Recovery Plan ({rca.remediation_plan.length} Steps)
+          </span>
+          {rca.sop_reference && (
+            <span className="text-[11px] font-medium text-zinc-500">
+              Governed by {rca.sop_reference.split(" ")[0]}
+            </span>
+          )}
+        </div>
 
-        {/* Section 5: Remediation Action Plan (SOP Guided) */}
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <div className="font-bold text-slate-800 text-xs uppercase tracking-wide flex items-center gap-1.5">
-              <Wrench className="w-3.5 h-3.5 text-[#005086]" />
-              <span>Corrective Action Plan</span>
-            </div>
-            {rca.sop_reference && (
-              <span className="text-[11px] font-mono text-[#005086] font-semibold bg-sky-50 px-2 py-0.5 rounded border border-sky-200">
-                {rca.sop_reference}
-              </span>
-            )}
-          </div>
-          <div className="space-y-2">
-            {rca.remediation_plan.map((step) => (
+        <div className="space-y-3">
+          {rca.remediation_plan.map((step) => {
+            const isCopied = copiedStep === step.step_number;
+            return (
               <div
                 key={step.step_number}
-                className="p-2.5 bg-slate-50 border border-slate-200 rounded flex gap-2.5 items-start"
+                className="flex items-start gap-3 p-3.5 rounded-xl bg-zinc-50/70 border border-zinc-200/50 hover:bg-zinc-50 transition-colors"
               >
-                <div className="w-5 h-5 rounded-full bg-[#005086] text-white flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">
+                <div className="w-5 h-5 rounded-full bg-zinc-900 text-white flex items-center justify-center font-medium text-[11px] shrink-0 mt-0.5">
                   {step.step_number}
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-slate-900 text-xs">
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-medium text-zinc-900 leading-snug">
                       {step.action}
-                    </span>
-                    <span className="text-[10px] text-slate-500 font-mono bg-white px-1.5 py-0.2 rounded border border-slate-200">
+                    </p>
+                    <span className="text-[10px] font-medium text-zinc-500 bg-zinc-200/60 px-2 py-0.5 rounded-md shrink-0">
                       {step.target_system}
                     </span>
                   </div>
+
                   {step.command_or_tool && (
-                    <div className="mt-1 bg-slate-900 text-emerald-300 font-mono text-[10px] p-1.5 rounded select-text">
-                      {step.command_or_tool}
+                    <div className="mt-2 flex items-center justify-between bg-zinc-900 text-zinc-100 font-mono text-[11px] px-3 py-2 rounded-lg select-text group">
+                      <span className="truncate pr-2">{step.command_or_tool}</span>
+                      <button
+                        onClick={() => handleCopy(step.command_or_tool!, step.step_number)}
+                        className="text-zinc-400 hover:text-white p-1 rounded transition-colors shrink-0"
+                        title="Copy command"
+                      >
+                        {isCopied ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                      </button>
                     </div>
                   )}
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Section 6: Multi-Agent Reasoning Audit Trail (Collapsible) */}
-        <div className="border border-slate-200 rounded bg-slate-50/50">
-          <button
-            onClick={() => setShowAgentTrail(!showAgentTrail)}
-            className="w-full p-2 text-left flex items-center justify-between text-xs text-slate-700 font-semibold hover:bg-slate-100/60"
-          >
-            <div className="flex items-center gap-1.5">
-              {showAgentTrail ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-              <span>Agent Execution Audit Trail ({rca.agent_reasoning_trail.length} Nodes Completed)</span>
-            </div>
-            <span className="text-[10px] text-slate-500 font-mono">LangGraph Supervisor</span>
-          </button>
-
-          {showAgentTrail && (
-            <div className="p-3 border-t border-slate-200 space-y-2 bg-white">
-              {rca.agent_reasoning_trail.map((trail, idx) => (
-                <div key={idx} className="p-2 bg-slate-50 border border-slate-200 rounded text-[11px]">
-                  <div className="flex items-center justify-between font-semibold text-slate-800 mb-0.5">
-                    <span className="text-[#005086]">{trail.agent_name}</span>
-                    <span className="font-mono text-[10px] text-slate-400">{trail.timestamp}</span>
-                  </div>
-                  <p className="text-slate-600">{trail.summary}</p>
-                </div>
-              ))}
-            </div>
-          )}
+            );
+          })}
         </div>
       </div>
 
-      {/* Human-in-the-Loop Action Bar (CRITICAL REQUIREMENT) */}
-      <div className="p-3 bg-slate-100 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3">
-        <div className="text-[11px] text-slate-600">
-          <span className="font-semibold text-slate-800">Operator Action Required: </span>
-          Review proposal and commit to ServiceNow ticket workflow.
+      {/* Human-in-the-Loop Decision Bar */}
+      <div className="p-4 bg-white border border-black/[0.06] rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.03)] flex flex-wrap items-center justify-between gap-3 sticky bottom-4 z-20">
+        <div>
+          <span className="text-xs font-medium text-zinc-900 block">
+            Authorize Resolution Plan
+          </span>
+          <span className="text-[11px] text-zinc-500">
+            Commits root cause, work notes, and assignment routing to ServiceNow.
+          </span>
         </div>
 
-        <div className="flex items-center space-x-2">
-          {/* Reject Button */}
+        <div className="flex items-center gap-2">
           <button
             onClick={onReject}
-            className="px-3 py-2 border border-red-300 hover:bg-red-50 text-red-700 rounded text-xs font-semibold flex items-center gap-1.5 transition-colors"
+            className="px-3.5 py-1.5 rounded-full text-xs font-medium text-zinc-600 hover:text-rose-600 hover:bg-rose-50 transition-colors"
           >
-            <XCircle className="w-3.5 h-3.5" />
-            <span>Reject / Escalate</span>
+            Escalate / Dismiss
           </button>
 
-          {/* Edit Button */}
           <button
             onClick={onEdit}
-            className="px-3 py-2 border border-slate-300 hover:bg-white bg-slate-50 text-slate-800 rounded text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-xs"
+            className="px-4 py-1.5 rounded-full text-xs font-medium text-zinc-700 bg-zinc-100 hover:bg-zinc-200/80 border border-zinc-200/60 transition-colors"
           >
-            <Edit3 className="w-3.5 h-3.5" />
-            <span>Edit Proposal</span>
+            Edit Plan
           </button>
 
-          {/* Approve Button */}
           <button
             onClick={onApprove}
-            className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-colors"
+            className="px-5 py-1.5 rounded-full text-xs font-medium text-white bg-[#0071e3] hover:bg-[#0077ed] shadow-xs transition-colors"
           >
-            <ThumbsUp className="w-3.5 h-3.5" />
-            <span>Approve RCA & Route Ticket</span>
+            Approve & Update Ticket
           </button>
         </div>
       </div>

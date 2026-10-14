@@ -1,8 +1,13 @@
 import sys
 from pathlib import Path
 
+# Ensure UTF-8 output on Windows console
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8')
+
 # Add backend directory to sys.path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+
 
 from app.rag.ingestion import ingest_knowledge_base, get_incident_by_id
 from app.rag.vector_store import KnowledgeVectorStore

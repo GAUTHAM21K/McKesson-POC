@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { ShieldCheck, BookOpen, Server, RefreshCw } from "lucide-react";
+import { BookOpen, RefreshCw, CheckCircle2 } from "lucide-react";
 
 interface HeaderProps {
   onOpenKB: () => void;
@@ -17,63 +17,51 @@ export const Header: React.FC<HeaderProps> = ({
   activeIncidentsCount,
 }) => {
   return (
-    <header className="bg-[#005086] text-white border-b border-[#003b64] shadow-sm sticky top-0 z-40">
-      <div className="max-w-[1720px] mx-auto px-4 h-14 flex items-center justify-between">
+    <header className="sticky top-0 z-40 w-full border-b border-black/[0.06] bg-white/80 backdrop-blur-xl transition-all">
+      <div className="max-w-[1600px] mx-auto px-6 h-14 flex items-center justify-between">
         {/* Brand / Platform Identity */}
-        <div className="flex items-center space-x-3">
-          <div className="bg-white text-[#005086] font-bold px-2 py-0.5 rounded text-xs tracking-wider border border-white/20">
-            DIST-OPS
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold tracking-tight text-zinc-900">
+              McKesson
+            </span>
+            <span className="text-zinc-300">/</span>
+            <span className="text-xs font-medium text-zinc-600">
+              Distribution Operations
+            </span>
           </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-semibold tracking-tight text-white flex items-center gap-2">
-              Distribution Operations AI Root Cause Analysis (RCA) Copilot
-              <span className="bg-[#003b64] text-xs px-2 py-0.2 rounded text-slate-200 font-mono font-normal">
-                v1.0-PoC
-              </span>
-            </span>
-            <span className="text-[11px] text-slate-300">
-              Warehouse Pipeline: SAP ERP &rarr; EAI &rarr; Acumax WMS &rarr; Pick/Pack/Ship/Truck Close
-            </span>
+
+          <div className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-zinc-100 text-zinc-600 border border-zinc-200/60">
+            {activeIncidentsCount} {activeIncidentsCount === 1 ? "Incident" : "Incidents"} In Queue
           </div>
         </div>
 
         {/* Global Controls & Status */}
-        <div className="flex items-center space-x-4 text-xs">
-          <div className="hidden md:flex items-center space-x-2 bg-[#003b64] px-3 py-1 rounded border border-[#002e4f]">
-            <Server className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="text-slate-300">LangGraph Supervisor:</span>
-            <span className="text-emerald-400 font-medium">ONLINE</span>
-            <span className="text-slate-400">|</span>
-            <span className="text-slate-300">Vector Store:</span>
-            <span className="text-emerald-400 font-medium">INDEXED</span>
+        <div className="flex items-center gap-3 text-xs">
+          <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-50 border border-zinc-200/60 text-zinc-600 text-[11px]">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span>Telemetric Diagnostics Active</span>
           </div>
 
           <button
             onClick={onOpenKB}
-            className="flex items-center space-x-1.5 bg-[#003b64] hover:bg-[#002e4f] text-slate-200 hover:text-white px-2.5 py-1 rounded border border-[#002e4f] transition-colors"
-            title="Browse Knowledge Base Articles & Problem Records"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-zinc-700 bg-zinc-100/80 hover:bg-zinc-200/70 border border-zinc-200/60 transition-colors"
           >
-            <BookOpen className="w-3.5 h-3.5 text-sky-300" />
-            <span>KB & SOP Repository</span>
+            <BookOpen className="w-3.5 h-3.5 text-zinc-500" />
+            <span>Standard Operating Procedures</span>
           </button>
 
           <button
             onClick={onRefresh}
             disabled={isLoading}
-            className="flex items-center space-x-1.5 bg-white/10 hover:bg-white/20 text-white px-2.5 py-1 rounded border border-white/20 transition-colors disabled:opacity-50"
-            title="Refresh Incident Feeds"
+            className="inline-flex items-center justify-center w-8 h-8 rounded-full text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-colors disabled:opacity-40"
+            title="Refresh Incident Queue"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
-            <span>Refresh</span>
           </button>
-
-          <div className="border-l border-white/20 pl-4 flex items-center space-x-2 text-right">
-            <div>
-              <div className="font-semibold text-white">HITL Mode: ACTIVE</div>
-              <div className="text-[10px] text-slate-300">Operator: Ops Commander</div>
-            </div>
-            <div className="w-2 h-2 rounded-full bg-emerald-400"></div>
-          </div>
         </div>
       </div>
     </header>

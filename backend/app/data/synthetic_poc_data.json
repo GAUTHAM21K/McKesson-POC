@@ -192,6 +192,30 @@
       "tags": ["Pick", "Cold Chain", "SAP", "Material Master", "MARA-TEMPB", "Biologics", "Refrigerated"],
       "applicable_stages": ["Pick", "SAP"],
       "content": "OVERVIEW: Cold chain pharmaceutical products (2-8°C biologics, insulins, vaccines) require strict temperature profile validation during warehouse picking. If the SAP ECC overnight batch synchronization pushes an incorrect storage condition flag (e.g., MARA-TEMPB = 'AMBIENT_15_25' instead of 'COLD_2_8'), Acumax WMS triggers safety interlock error BATCH_TEMP_RANGE_INVALID_BLOCK and halts RF picking to prevent medication compromise.\n\nDIAGNOSTIC CRITERIA:\n1. RF guns throw error BATCH_TEMP_RANGE_INVALID_BLOCK in Cold Chain zone.\n2. Discrepancy between SAP MM03 storage conditions and Acumax SKU profile.\n3. Time out of refrigeration (TOR) alarm active on staged picking totes.\n\nREMEDIATION PROCEDURE (SOP-COLD-612):\nStep 1: Immediately move staged pick totes back into 2-8°C walk-in coolers to prevent temperature excursion.\nStep 2: Contact Master Data Management (MDM) emergency hotline to rollback MARA-TEMPB table changes in SAP ECC for affected plant.\nStep 3: Trigger delta master data sync interface RFC_SAP_ACUMAX_MAT_SYNC.\nStep 4: Verify Acumax SKU temperature profile reflects 'COLD_2_8' across all affected SKUs.\nStep 5: Resume Cold Chain wave picking tasks on RF terminals.\n\nOWNING SUPPORT GROUP: SAP Master Data Support (Co-assigned to DC Quality Assurance)."
+    },
+    {
+      "kb_id": "KB0073401",
+      "title": "ASRS High-Bay Crane Optical Interlock & Dual-Shuttle Gridlock SOP",
+      "category": "ASRS / Automation",
+      "tags": ["ASRS", "Crane", "High Bay", "Dematic", "PLC", "Interlock", "Shuttle", "Gridlock"],
+      "applicable_stages": ["Pick", "Acumax"],
+      "content": "OVERVIEW: Automated Storage & Retrieval Systems (ASRS) high-bay cranes utilize dual laser distance meters (LDM-02) and PLC safety interlocks to retrieve pallet loads from rack elevations up to 110 feet. When optical reflector misalignment or dust contamination exceeds 12mm tolerance during high-velocity deceleration, the crane controller triggers safety fault CRANE_OPTICAL_FAULT_ESTOP and halts all crane movements in the aisle, starving downstream pick faces.\n\nDIAGNOSTIC CRITERIA:\n1. ASRS WCS console displays CRANE_OPTICAL_FAULT_ESTOP on Crane #3.\n2. Crane PLC reports laser reflector deviation > 12mm on Z-axis.\n3. Downstream pallet decant conveyor status STARVED_IDLE.\n\nREMEDIATION PROCEDURE (SOP-ASRS-734):\nStep 1: In Dematic WCS Engineering Console, engage aisle lockout safety protocol for Aisle 04.\nStep 2: Dispatch maintenance technician with optical inspection rig to clean and realign reflector target LDM-02.\nStep 3: Execute PLC manual homing sequence from WCS diagnostic terminal: dematic_ctl home --crane CRN-03 --axis ALL.\nStep 4: Clear safety software latch: dematic_ctl reset-estop --auth-key MNT-9921.\nStep 5: Release queued pallet replenishment tasks and confirm aisle operation resumes.\n\nOWNING SUPPORT GROUP: ASRS & Automation Engineering."
+    },
+    {
+      "kb_id": "KB0081290",
+      "title": "Automated Print-and-Apply (PandA) Applicator Tamp Cylinder Jam Resolution SOP",
+      "category": "Packing & Automation",
+      "tags": ["Pack", "PandA", "Zebra", "Printhead", "Tamp Cylinder", "Barcode", "Cartonization"],
+      "applicable_stages": ["Pack", "Ship"],
+      "content": "OVERVIEW: Automated packaging spurs utilize high-speed Print-and-Apply (PandA) labeling machines equipped with Zebra thermal print engines and pneumatic tamp applicators. If label backing tension drops or vacuum pressure leaks below 4.2 bar, printed shipping labels fail to transfer to carton surfaces, causing pneumatic tamp cylinder timeout ERR_PANDA_TAMP_EXTEND_TIMEOUT and halting the cartonization conveyor line.\n\nDIAGNOSTIC CRITERIA:\n1. PandA PLC alarm ERR_PANDA_TAMP_EXTEND_TIMEOUT triggered on Packing Lane 3.\n2. Inline optical barcode scanner verifies absence of compliant GS1-128 shipping label on passing carton.\n3. Pneumatic regulator pressure reading < 4.5 bar.\n\nREMEDIATION PROCEDURE (SOP-PANDA-812):\nStep 1: Pause packing line conveyor infeed to Lane 3 to prevent carton pile-up.\nStep 2: Inspect pneumatic vacuum pad for adhesive glue buildup; clean using approved solvent.\nStep 3: Verify compressed air regulator line pressure is restored to nominal 6.0 bar.\nStep 4: Execute PandA cycle test from control panel: panda_mgr test-cycle --lane 03 --labels 2.\nStep 5: Re-engage cartonization conveyor and verify label application on 5 test cartons.\n\nOWNING SUPPORT GROUP: Packing Line Automation Maintenance."
+    },
+    {
+      "kb_id": "KB0092415",
+      "title": "Outbound EDI 214 Carrier Shipment Status & Line-Haul Gate Out Sync SOP",
+      "category": "Shipping & EDI",
+      "tags": ["Ship", "Truck Close", "EDI 214", "Carrier", "Line-Haul", "Old Dominion", "FedEx", "YMS"],
+      "applicable_stages": ["Truck Close", "Ship"],
+      "content": "OVERVIEW: Upon security guardhouse departure, the Yard Management System (YMS) triggers outbound EDI 214 (Transportation Carrier Shipment Status Message) to freight carriers (Old Dominion, FedEx Freight). If carrier API token expiration or network timeout blocks EDI 214 acknowledgment, the yard security gate system interlock refuses to lift the physical exit barrier, holding trailers inside the facility gate.\n\nDIAGNOSTIC CRITERIA:\n1. Gate exit console displays EDI_214_ACK_TIMEOUT on Trailer ID TRK-8821.\n2. YMS outbound queue depth > 0 for carrier Old Dominion.\n3. Carrier line-haul dispatch portal indicates status 'PENDING_DEPARTURE'.\n\nREMEDIATION PROCEDURE (SOP-EDI-924):\nStep 1: Guardhouse supervisor triggers emergency manual gate release code in YMS console.\nStep 2: In Acumax Shipping Console, select 'Resend Carrier EDI 214 Transmission' with relaxed ACK mode.\nStep 3: Contact Carrier Integration Helpdesk if authentication error 401 is reported in EDI bridge logs.\nStep 4: Verify manual Bill of Lading (BOL) copy has physical driver signature stamped.\nStep 5: Archive dispatch event with gate supervisor override reference.\n\nOWNING SUPPORT GROUP: Logistics Carrier Integration & YMS Support."
     }
   ],
   "problem_records": [
@@ -222,6 +246,27 @@
       "root_cause_summary": "Acumax picking engine created temporary split child lines that were not purged upon pick cancellation, creating mismatch against shipping manifest header count.",
       "permanent_fix": "Added database trigger on WAVE_PICK_DTL to automatically purge ghost split records upon wave completion.",
       "related_kbs": ["KB0052104"]
+    },
+    {
+      "problem_id": "PRB0012901",
+      "title": "ASRS High-Bay Optical Distance Sensor Misalignment under Thermal Expansion",
+      "root_cause_summary": "Thermal roof expansion during summer peak causes 14mm deflection in high-bay rack guide rails, tripping laser distance meter tolerance safety gates.",
+      "permanent_fix": "Installed floating compensator brackets on laser target reflectors and upgraded PLC firmware to include dynamic thermal calibration offset.",
+      "related_kbs": ["KB0073401"]
+    },
+    {
+      "problem_id": "PRB0013440",
+      "title": "Print and Apply Pneumatic Tamp Vacuum Seal Adhesive Accumulation",
+      "root_cause_summary": "Adhesive bleed from hot-melt label stock coats PandA vacuum suction cups after 8,000 cycles, causing tamp cylinder extension timeout errors.",
+      "permanent_fix": "Switched to non-stick fluoropolymer vacuum suction cups and added automated shift cleaning protocol.",
+      "related_kbs": ["KB0081290"]
+    },
+    {
+      "problem_id": "PRB0014102",
+      "title": "Outbound EDI 214 Carrier OAuth Token Expiration on Midnight Rollover",
+      "root_cause_summary": "Carrier Old Dominion API gateway expires OAuth tokens at 00:00 UTC without proactive refresh in YMS broker, causing 401 Unauthorized errors on night line-hauls.",
+      "permanent_fix": "Implemented proactive token refresh daemon with 60-minute pre-expiration renewal window in EAI bridge.",
+      "related_kbs": ["KB0092415"]
     }
   ]
 }
